@@ -27,16 +27,16 @@ if not exist "main.py" (
     exit /b 1
 )
 
-if not exist "apple.png" (
-    echo WARNING: apple.png not found!
-    echo You need to add apple.png to the current directory.
+if not exist "assets/the-monkey-serious-meme.png" (
+    echo WARNING: the-monkey-serious-meme.png not found!
+    echo You need to add the-monkey-serious-meme.png to the current directory.
     echo This image is displayed when tongue is NOT out.
     echo.
 )
 
-if not exist "appletongue.png" (
-    echo WARNING: appletongue.png not found!
-    echo You need to add appletongue.png to the current directory.
+if not exist "assets/the-monkey-thinking-meme.png" (
+    echo WARNING: the-monkey-thinking-meme.png not found!
+    echo You need to add the-monkey-thinking-meme.png to the current directory.
     echo This image is displayed when tongue IS out.
     echo.
 )

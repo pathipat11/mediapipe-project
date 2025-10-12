@@ -104,21 +104,21 @@ def main():
     print("=" * 60)
     
     # Check if required image files exist
-    if not os.path.exists('apple.png'):
-        print("\n[ERROR] apple.png not found!")
+    if not os.path.exists('assets/the-monkey-serious-meme.png'):
+        print("\n[ERROR] the-monkey-serious-meme.png not found!")
         print("Please add this image to the project directory.")
         print("This image is displayed when tongue is NOT out.")
         return
     
-    if not os.path.exists('appletongue.png'):
-        print("\n[ERROR] appletongue.png not found!")
+    if not os.path.exists('assets/the-monkey-thinking-meme.png'):
+        print("\n[ERROR] the-monkey-thinking-meme.png not found!")
         print("Please add this image to the project directory.")
         print("This image is displayed when tongue IS out.")
         return
     
     # Load images using OpenCV (images are loaded in BGR format)
-    apple_img = cv2.imread('apple.png')
-    appletongue_img = cv2.imread('appletongue.png')
+    apple_img = cv2.imread('assets/the-monkey-serious-meme.png')
+    appletongue_img = cv2.imread('assets/the-monkey-thinking-meme.png')
     
     # Verify images loaded successfully
     if apple_img is None or appletongue_img is None:
@@ -218,22 +218,19 @@ def main():
                     current_meme = appletongue_img.copy()
                     
                     # Add visual indicator on camera feed (green text)
-                    cv2.putText(frame, "TONGUE OUT!", (10, 50), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+                    cv2.putText(frame, "TONGUE OUT!", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
                 else:
                     # No tongue - show normal meme
                     current_meme = apple_img.copy()
                     
                     # Add status text (yellow text)
-                    cv2.putText(frame, "No tongue detected", (10, 50), 
-                              cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                    cv2.putText(frame, "No tongue detected", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
         else:
             # No face detected in frame
             current_meme = apple_img.copy()
             
             # Add warning text (red text)
-            cv2.putText(frame, "No face detected", (10, 50), 
-                      cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, "No face detected", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         
         # ====================================================================
         # Display windows
