@@ -57,9 +57,11 @@ hands = mp_hands.Hands(
 # ============================================================================
 
 def euclidean(p1, p2):
+    """Calculate Euclidean distance between two 3D landmarks."""
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
 
 def mouth_open_ratio(landmarks):
+    """Measure mouth opening ratio based on upper and lower lip distance."""
     top = landmarks.landmark[13]
     bottom = landmarks.landmark[14]
     return abs(top.y - bottom.y)
@@ -67,54 +69,97 @@ def mouth_open_ratio(landmarks):
 def get_landmark_point(landmarks, idx):
     return landmarks.landmark[idx]
 
-def detect_expression(face_landmarks, hand_landmarks):
+def detect_expression(face_landmarks, hand_landmarks, frame=None):
     """
-    คืนค่าชื่อ expression จากการตรวจจับทั้งใบหน้าและมือ
-    - serious: หน้านิ่ง
-    - shy: มือยกนิ้วชี้แตะปาก
-    - thinking: มือยกนิ้วชี้ขึ้น (เหนือระดับหัว)
-    - surprised: ปากอ้า
+    Detect facial expression or hand gesture and return expression name.
+    Optionally draw debug lines if frame is provided.
+
+    - serious: neutral face
+    - shy: index finger near mouth
+    - thinking: index finger raised above forehead
+    - surprised: mouth open
     """
     if not face_landmarks:
         return "serious"
 
-    # --- 1. ตรวจปากอ้า ---
+    # --- 1. Detect mouth open ---
     mouth_open = mouth_open_ratio(face_landmarks)
     if mouth_open > MOUTH_OPEN_THRESHOLD:
         return "surprised"
 
-    # --- 2. ตรวจมือ ---
+    # --- 2. Detect hand position ---
     if hand_landmarks:
         for hand in hand_landmarks:
-            index_tip = hand.landmark[8]  # ปลายนิ้วชี้
+            index_tip = hand.landmark[8]
 
-            # จุดสำคัญบนหน้า
+            # Key facial points
             mouth_center = face_landmarks.landmark[13]
             forehead = face_landmarks.landmark[10]
-            temple = face_landmarks.landmark[127]  # ข้างหัว
 
             dist_mouth = euclidean(index_tip, mouth_center)
             dist_forehead = euclidean(index_tip, forehead)
 
-            #  shy: นิ้วใกล้ปาก
+            # --- Debug visualization ---
+            if frame is not None:
+                h, w, _ = frame.shape
+                p_index = (int(index_tip.x * w), int(index_tip.y * h))
+                p_mouth = (int(mouth_center.x * w), int(mouth_center.y * h))
+                p_forehead = (int(forehead.x * w), int(forehead.y * h))
+
+                # Draw debug points
+                cv2.circle(frame, p_index, 8, (255, 0, 0), -1)       # Index finger (blue)
+                cv2.circle(frame, p_mouth, 6, (0, 255, 0), -1)       # Mouth (green)
+                cv2.circle(frame, p_forehead, 6, (0, 255, 255), -1)  # Forehead (yellow)
+
+                # Draw debug lines
+                cv2.line(frame, p_index, p_mouth, (0, 255, 0), 2)
+                cv2.line(frame, p_index, p_forehead, (0, 255, 255), 2)
+
+                # Show distance text
+                cv2.putText(frame, f"mouth:{dist_mouth:.3f}", (p_index[0] + 10, p_index[1] - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(frame, f"forehead:{dist_forehead:.3f}", (p_index[0] + 10, p_index[1] + 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+            # ✅ shy: finger near mouth
             if dist_mouth < HAND_FACE_DISTANCE_THRESHOLD:
                 return "shy"
 
-            #  thinking: นิ้วอยู่เหนือหัว (ยกขึ้น)
-            if index_tip.y < forehead.y:  # y น้อยกว่า = สูงกว่า
+            # ✅ thinking: finger above forehead
+            if index_tip.y < forehead.y:
                 return "thinking"
 
-    # --- 3. ค่าเริ่มต้น (หน้านิ่ง) ---
+    # --- 3. Default: neutral ---
     return "serious"
 
 
+def draw_expression_overlay(frame, expression):
+    """Draw a transparent overlay with expression text."""
+    overlay = frame.copy()
+    h, w, _ = frame.shape
+
+    # Background rectangle (semi-transparent)
+    rect_height = 60
+    cv2.rectangle(overlay, (0, 0), (w, rect_height), (0, 0, 0), -1)
+
+    # Blend overlay with transparency
+    alpha = 0.4
+    cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0, frame)
+
+    # Expression text style
+    text = f"Expression: {expression.upper()}"
+    cv2.putText(frame, text, (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 255, 0), 3, cv2.LINE_AA)
+
+
 # ============================================================================
-# MAIN
+# MAIN FUNCTION
 # ============================================================================
+
 def main():
-    print("="*60)
+    print("=" * 60)
     print("Monkey Expression Meme Detector 🐵 (Face + Hand Mode)")
-    print("="*60)
+    print("=" * 60)
 
     meme_files = {
         "serious": "assets/the-monkey-serious-meme.png",
@@ -153,40 +198,47 @@ def main():
         frame = cv2.resize(frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        # process ทั้งหน้าและมือ
+        # Process face and hand landmarks
         face_results = face_mesh.process(rgb)
         hand_results = hands.process(rgb)
 
         face_landmarks = face_results.multi_face_landmarks[0] if face_results.multi_face_landmarks else None
         hand_landmarks = hand_results.multi_hand_landmarks if hand_results.multi_hand_landmarks else None
 
-        expression = detect_expression(face_landmarks, hand_landmarks)
+        expression = detect_expression(face_landmarks, hand_landmarks, frame)
         current_meme = memes[expression].copy()
 
-        # วาด landmarks เพื่อ debug
+        # Draw hand landmarks
         if hand_landmarks:
             for hand in hand_landmarks:
                 mp_drawing.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
 
+        # Draw face landmarks
         if face_landmarks:
             mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
                                         landmark_drawing_spec=None,
-                                        connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1))
+                                        connection_drawing_spec=mp_drawing.DrawingSpec(color=(0, 255, 0),
+                                                                                        thickness=1,
+                                                                                        circle_radius=1))
 
-        cv2.putText(frame, f"Expression: {expression}", (10, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
+        # --- Draw overlay label ---
+        draw_expression_overlay(frame, expression)
 
+        # Display both camera feed and meme output
         cv2.imshow("Camera Input", frame)
         cv2.imshow("Meme Output", current_meme)
 
+        # Press 'q' to exit
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+    # Cleanup
     cap.release()
     cv2.destroyAllWindows()
     face_mesh.close()
     hands.close()
     print("[OK] Application closed successfully.")
+
 
 if __name__ == "__main__":
     main()
