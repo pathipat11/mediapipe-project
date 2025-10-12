@@ -1,177 +1,145 @@
-# 👅 Tongue Detection Meme Display
+# 🐵 Face + Hand Expression Meme Display
 
-A fun Python application using MediaPipe and OpenCV that detects when your tongue is out and displays different meme images in real-time!
+A fun and interactive Python project using **MediaPipe** and **OpenCV** that detects facial expressions and hand gestures to display different meme images in real time.
 
 **GitHub:** [https://github.com/pathipat11/mediapipe-project.git](https://github.com/pathipat11/mediapipe-project.git)
 
-Perfect for learning about:
-- MediaPipe Face Mesh detection
-- Real-time video processing with OpenCV
-- Facial landmark analysis
-- Computer vision basics
+Perfect for learning:
 
-**🚀 New to this project?** Start with the [Quick Start Guide](QUICKSTART.md) to get running in 5 minutes!
+* Real-time computer vision with OpenCV
+* MediaPipe Face Mesh & Hands tracking
+* Gesture-based interaction
+* Landmark distance analysis
 
-**📚 Want to understand how it works?** Check out the [Tutorial](TUTORIAL.md) for detailed explanations!
+## 🎭 Expressions Supported
 
-**🍎 macOS user?** See the [macOS Setup Guide](SETUP_MACOS.md) for platform-specific instructions!
+| Expression    | Trigger Condition                  |
+| ------------- | ---------------------------------- |
+| **Serious**   | Default (no gesture detected)      |
+| **Shy**       | Index finger near the mouth        |
+| **Thinking**  | Index finger raised above forehead |
+| **Surprised** | Mouth open                         |
 
-## Features
+Each expression automatically switches to a corresponding meme image.
 
-- 🎥 Real-time webcam face detection using MediaPipe Face Mesh
-- 👅 Tongue-out detection algorithm
-- 🖼️ Dual window display: Camera input and Meme output
-- 📺 Large window sizes (960x720) for clear visibility
-- 🔄 Real-time switching between normal and tongue-out meme images
+## ✨ Features
 
-## Requirements
+* 🧠 Real-time face and hand tracking using **MediaPipe**
+* 🖼️ Dual-window display: Camera Input + Meme Output
+* 🧩 Expression detection with smooth overlay labels
+* 🎨 Transparent overlay labels for cleaner visualization
+* 🔄 Automatic meme switching based on detected expressions
 
-- **Python 3.11** (specifically 3.11, not 3.13 or other versions)
-- Webcam (built-in or USB)
-- Two meme images: `apple.png` and `appletongue.png`
-- **Operating System:** Windows 10/11, macOS 10.14+, or Linux
+## 🧰 Requirements
 
-## Installation
+* **Python 3.11**
+* Webcam (built-in or USB)
+* 4 meme images in `assets/` directory:
 
-### For All Operating Systems:
+  * `the-monkey-serious-meme.png`
+  * `the-monkey-shy-meme.png`
+  * `the-monkey-thinking-meme.png`
+  * `the-monkey-surprised-meme.png`
 
-1. **Install Python dependencies (using Python 3.11):**
-   
-   **Windows:**
-   ```bash
-   python3.11 -m pip install -r requirements.txt
-   ```
-   
-   **macOS/Linux:**
-   ```bash
-   python3.11 -m pip install -r requirements.txt
-   # or if python3.11 command doesn't exist:
-   pip3 install -r requirements.txt
-   ```
+## ⚙️ Installation
 
-2. **Add your meme images:**
-   
-   You need to provide two PNG images:
-   - `apple.png` - Displayed when tongue is NOT out
-   - `appletongue.png` - Displayed when tongue IS out
-   
-   **How to get images:**
-   - Find any meme images you like online
-   - Create your own custom images
-   - Use any PNG images (they will be automatically resized to 960x720)
-   - Recommended: Use images with transparent backgrounds or high contrast
-   
-   **Example ideas:**
-   - Apple emoji + Apple with tongue out emoji
-   - Happy face + Silly face
-   - Normal pet + Derpy pet
-   - Any before/after style meme format
+### 1. Clone Repository
 
-## Usage
-
-### Windows:
-
-**Option 1: Double-click the batch file (easiest):**
-- Simply double-click `run.bat` in File Explorer
-
-**Option 2: Run from PowerShell:**
-```powershell
-.\run.bat
+```bash
+git clone https://github.com/pathipat11/mediapipe-project.git
+cd mediapipe-project
 ```
 
-**Option 3: Run from Command Prompt (cmd):**
-```cmd
-run.bat
+### 2. Install Dependencies
+
+```bash
+python3.11 -m pip install -r requirements.txt
 ```
 
-**Option 4: Run directly with Python:**
+### 3. Add Meme Images
+
+Place your 4 meme images inside the `assets/` folder. Make sure they match the filenames listed above.
+
+### 4. Run the Program
+
+**Windows:**
+
 ```bash
 python3.11 main.py
 ```
 
-### macOS/Linux:
+**macOS/Linux:**
 
-**Option 1: Run with shell script (easiest):**
 ```bash
-chmod +x run.sh  # Only needed once to make script executable
-./run.sh
-```
-
-**Option 2: Run directly with Python:**
-```bash
-python3.11 main.py
-# or
 python3 main.py
 ```
 
-### Controls
-- Press **'q'** to quit the application
+## 🕹️ Controls
 
-### How it works
+* Press **'q'** to quit the program.
 
-1. The application opens two windows:
-   - **Camera Input**: Shows your live webcam feed with detection status
-   - **Meme Output**: Displays the appropriate meme image
+## 🧠 How It Works
 
-2. When your face is detected:
-   - If your tongue is **NOT out** → displays `apple.png`
-   - If your tongue **IS out** → displays `appletongue.png`
+1. **Face Mesh Detection:** Tracks 468 facial landmarks.
+2. **Hand Tracking:** Tracks 21 landmarks per hand.
+3. **Expression Logic:** Combines mouth distance + finger position to classify emotion.
+4. **Meme Output:** Displays the corresponding meme image in a separate window.
 
-3. Status indicators appear on the camera input window:
-   - "TONGUE OUT!" (green) - Tongue detected
-   - "No tongue detected" (yellow) - Face detected but no tongue
-   - "No face detected" (red) - No face in view
+### Detection Flow
 
-## Troubleshooting
+1. Mouth open → `Surprised`
+2. Index finger near mouth → `Shy`
+3. Index finger above forehead → `Thinking`
+4. None of the above → `Serious`
 
-### Tongue detection not working properly
+## 🧩 Technical Details
 
-The tongue detection threshold can be adjusted in `main.py`. Look for this line:
+* **Face Detection:** MediaPipe Face Mesh
+* **Hand Detection:** MediaPipe Hands
+* **Drawing:** OpenCV for overlay visualization
+* **Resolution:** 960×720 (for both windows)
+* **Overlay Labels:** Semi-transparent rounded rectangles with text
+
+## 💡 Customization Ideas
+
+* Add new gestures (peace sign, thumbs up)
+* Integrate sound effects per expression
+* Save frames when expression changes
+* Add emoji overlays or filters
+* Build a GUI slider for sensitivity tuning
+
+## 🚑 Troubleshooting
+
+### Webcam Not Detected
+
+* Check if another app is using the camera
+* Change camera index in `main.py`: `cap = cv2.VideoCapture(1)`
+
+### Meme Images Not Found
+
+* Make sure all 4 PNGs exist in `assets/`
+* Use correct filenames (case-sensitive)
+
+### Detection Too Sensitive
+
+Adjust the thresholds in `main.py`:
 
 ```python
-TONGUE_OUT_THRESHOLD = 0.03  # Adjust this value based on your needs
+MOUTH_OPEN_THRESHOLD = 0.045
+HAND_FACE_DISTANCE_THRESHOLD = 0.08
 ```
 
-- **Increase the value** (e.g., 0.05) if it's too sensitive (detects tongue when it's not out)
-- **Decrease the value** (e.g., 0.02) if it's not sensitive enough (doesn't detect tongue when it is out)
+Increase or decrease these values as needed.
 
-### Webcam not opening
-
-- Make sure no other application is using the webcam
-- Try changing the camera index in `main.py`: `cap = cv2.VideoCapture(0)` to `cap = cv2.VideoCapture(1)`
-- **macOS users:** Grant camera permissions in System Preferences → Security & Privacy → Camera
-- **Linux users:** Ensure your user is in the `video` group: `sudo usermod -a -G video $USER`
-
-### Images not loading
-
-- Ensure `apple.png` and `appletongue.png` are in the same directory as `main.py`
-- Check that the image files are valid PNG format
-
-## Installation Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/pathipat11/mediapipe-project.git
-cd mediapipe-project
-
-# Install dependencies (Python 3.11)
-python3.11 -m pip install -r requirements.txt
-
-# Add your meme images (apple.png and appletongue.png)
-
-# Run the app
-# Windows (PowerShell): .\run.bat
-# Windows (Command Prompt): run.bat
-# Windows (Double-click): Just double-click run.bat
-# macOS/Linux: ./run.sh
-```
-
-See the [Quick Start Guide](QUICKSTART.md) for detailed instructions.
-
-## Project Structure
+## 🧩 Project Structure
 
 ```
 mediapipe-project/
+├── assets/              # Folder containing meme images
+│     ├── the-monkey-serious-meme.png
+│     ├── the-monkey-shy-meme.png
+│     ├── the-monkey-thinking-meme.png
+│     └── the-monkey-surprised-meme.png
 ├── main.py              # Main application script (well-commented for learning)
 ├── requirements.txt     # Python dependencies
 ├── run.bat              # Windows batch file to run with Python 3.11
@@ -188,83 +156,33 @@ mediapipe-project/
 └── appletongue.png      # Meme image (tongue out) - YOU NEED TO ADD THIS
 ```
 
-## Technical Details
+## 🧾 Dependencies
 
-- **Face Detection**: Uses MediaPipe Face Mesh for real-time facial landmark detection
-- **Tongue Detection**: Analyzes mouth landmark distances to determine if tongue is extended
-- **Window Size**: 960x720 pixels (approximately half of a 1920x1080 monitor)
-- **Frame Processing**: Mirror effect applied for natural interaction
+* `mediapipe==0.10.7`
+* `opencv-python==4.8.1.78`
+* `numpy==1.24.3`
 
-## Dependencies
+## 🧑‍💻 Contributing
 
-- `mediapipe==0.10.7` - Face mesh detection and tracking
-- `opencv-python==4.8.1.78` - Video capture and display
-- `numpy==1.24.3` - Numerical operations
+Pull requests are welcome! You can:
 
-## Customization Ideas 🎨
+* Improve expression logic
+* Add new meme reactions
+* Enhance overlay UI
+* Optimize performance
 
-Want to make this project your own? Try these modifications:
+## 🪟 Platform Support
 
-1. **Different gestures**: Modify the detection logic to detect smiles, winks, or eyebrow raises
-2. **More images**: Add multiple states (happy, sad, surprised) instead of just two
-3. **Sound effects**: Play sounds when tongue is detected
-4. **Record mode**: Save funny moments to video files
-5. **Filters/Effects**: Add Instagram-style filters to the camera feed
-6. **Hand gestures**: Combine with MediaPipe Hands for hand gesture detection
-7. **Green screen**: Replace the background instead of showing meme images
+| Platform         | Status            | Notes                               |
+| ---------------- | ----------------- | ----------------------------------- |
+| 🪟 Windows 10/11 | ✅ Fully Supported | Recommended for beginners           |
+| 🍎 macOS 10.14+  | ✅ Supported       | Camera permission required          |
+| 🐧 Linux         | ✅ Supported       | Add user to `video` group if needed |
 
-## Troubleshooting Common Issues
+## 📜 License
 
-### "No module named 'cv2'"
-- Make sure you installed the requirements with Python 3.11
-- Run: `python3.11 -m pip install -r requirements.txt`
+Released under the **MIT License** — free for personal and educational use.
 
-### Webcam shows black screen
-- Check if another application is using the webcam
-- Try allowing webcam permissions in Windows Settings
+---
 
-### Detection is laggy
-- Close other applications using the webcam
-- Lower the camera resolution in `main.py`
-- Ensure your computer meets minimum requirements
-
-## Contributing
-
-We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
-
-**Want to contribute?** Check out our [Contributing Guide](CONTRIBUTING.md) for:
-- How to get started
-- Code style guidelines
-- Pull request process
-- Feature ideas for all skill levels
-
-Some quick ideas:
-- Improve tongue detection algorithm
-- Add support for multiple faces (smile, wink, etc.)
-- Create a GUI for adjusting sensitivity
-- Add gesture recording/playback
-- Optimize performance
-- Improve cross-platform compatibility
-
-## Platform Support
-
-This project is fully cross-platform:
-
-| Platform | Status | Instructions |
-|----------|--------|--------------|
-| 🪟 Windows 10/11 | ✅ Fully Supported | Use `run.bat` or see [Quick Start](QUICKSTART.md) |
-| 🍎 macOS 10.14+ | ✅ Fully Supported | See [macOS Setup Guide](SETUP_MACOS.md) |
-| 🐧 Linux | ✅ Supported | Use `run.sh` or see [Quick Start](QUICKSTART.md) |
-
-## Credits
-
-Built with:
-- [MediaPipe](https://google.github.io/mediapipe/) by Google
-- [OpenCV](https://opencv.org/)
-- [NumPy](https://numpy.org/)
-- Python 3.11
-
-## License
-
-MIT License - Feel free to use and modify as needed. See LICENSE file for details.
-
+🎥 *Created by Pathipat Mattra — A computer vision playground built with love and monkeys!* 🐒
