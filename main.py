@@ -22,8 +22,7 @@ WINDOW_WIDTH = 960
 WINDOW_HEIGHT = 720
 
 MOUTH_OPEN_THRESHOLD = 0.045
-EYE_CLOSE_THRESHOLD = 0.020
-EYEBROW_DIFF_THRESHOLD = 0.015
+HAND_FACE_DISTANCE_THRESHOLD = 0.08
 
 # Tongue detection threshold - adjust this value to change sensitivity
 # Higher value = less sensitive (requires wider mouth opening)
@@ -38,10 +37,19 @@ EYEBROW_DIFF_THRESHOLD = 0.015
 # Initialize MediaPipe Face Mesh
 # This creates a face detection model that tracks 468 facial landmarks
 mp_face_mesh = mp.solutions.face_mesh
+mp_hands = mp.solutions.hands
+mp_drawing = mp.solutions.drawing_utils
+
 face_mesh = mp_face_mesh.FaceMesh(
-    min_detection_confidence=0.6,  # Confidence threshold for initial detection
-    min_tracking_confidence=0.6,   # Confidence threshold for tracking
-    max_num_faces=1                # We only need to track one face
+    min_detection_confidence=0.6,
+    min_tracking_confidence=0.6,
+    max_num_faces=1
+)
+
+hands = mp_hands.Hands(
+    max_num_hands=2,
+    min_detection_confidence=0.6,
+    min_tracking_confidence=0.6
 )
 
 # ============================================================================
@@ -56,40 +64,58 @@ def mouth_open_ratio(landmarks):
     bottom = landmarks.landmark[14]
     return abs(top.y - bottom.y)
 
-def eye_aspect_ratio(landmarks, ids):
-    # ids = (upper_lid, lower_lid)
-    return abs(landmarks.landmark[ids[0]].y - landmarks.landmark[ids[1]].y)
+def get_landmark_point(landmarks, idx):
+    return landmarks.landmark[idx]
 
-def eyebrow_gap(landmarks, eyebrow_id, eye_id):
-    return abs(landmarks.landmark[eyebrow_id].y - landmarks.landmark[eye_id].y)
+def detect_expression(face_landmarks, hand_landmarks):
+    """
+    คืนค่าชื่อ expression จากการตรวจจับทั้งใบหน้าและมือ
+    - serious: หน้านิ่ง
+    - shy: มือยกนิ้วชี้แตะปาก
+    - thinking: มือยกนิ้วชี้ขึ้น (เหนือระดับหัว)
+    - surprised: ปากอ้า
+    """
+    if not face_landmarks:
+        return "serious"
 
-def detect_expression(landmarks):
-    mouth_open = mouth_open_ratio(landmarks)
-    left_eye = eye_aspect_ratio(landmarks, (159, 145))  # left eye top-bottom
-    right_eye = eye_aspect_ratio(landmarks, (386, 374))  # right eye top-bottom
-
-    left_brow_gap = eyebrow_gap(landmarks, 70, 159)
-    right_brow_gap = eyebrow_gap(landmarks, 300, 386)
-
-    # Expression logic
+    # --- 1. ตรวจปากอ้า ---
+    mouth_open = mouth_open_ratio(face_landmarks)
     if mouth_open > MOUTH_OPEN_THRESHOLD:
         return "surprised"
-    elif left_eye < EYE_CLOSE_THRESHOLD and right_eye < EYE_CLOSE_THRESHOLD:
-        return "shy"
-    elif abs(left_brow_gap - right_brow_gap) > EYEBROW_DIFF_THRESHOLD:
-        return "thinking"
-    else:
-        return "serious"
+
+    # --- 2. ตรวจมือ ---
+    if hand_landmarks:
+        for hand in hand_landmarks:
+            index_tip = hand.landmark[8]  # ปลายนิ้วชี้
+
+            # จุดสำคัญบนหน้า
+            mouth_center = face_landmarks.landmark[13]
+            forehead = face_landmarks.landmark[10]
+            temple = face_landmarks.landmark[127]  # ข้างหัว
+
+            dist_mouth = euclidean(index_tip, mouth_center)
+            dist_forehead = euclidean(index_tip, forehead)
+
+            #  shy: นิ้วใกล้ปาก
+            if dist_mouth < HAND_FACE_DISTANCE_THRESHOLD:
+                return "shy"
+
+            #  thinking: นิ้วอยู่เหนือหัว (ยกขึ้น)
+            if index_tip.y < forehead.y:  # y น้อยกว่า = สูงกว่า
+                return "thinking"
+
+    # --- 3. ค่าเริ่มต้น (หน้านิ่ง) ---
+    return "serious"
+
 
 # ============================================================================
 # MAIN
 # ============================================================================
 def main():
     print("="*60)
-    print("Monkey Expression Meme Detector")
+    print("Monkey Expression Meme Detector 🐵 (Face + Hand Mode)")
     print("="*60)
 
-    # Load images
     meme_files = {
         "serious": "assets/the-monkey-serious-meme.png",
         "shy": "assets/the-monkey-shy-meme.png",
@@ -104,12 +130,11 @@ def main():
             return
         img = cv2.imread(path)
         memes[key] = cv2.resize(img, (WINDOW_WIDTH, WINDOW_HEIGHT))
-
     print("[OK] Meme images loaded.")
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
-        print("[ERROR] Cannot access webcam.")
+        print("[ERROR] Cannot open webcam.")
         return
 
     cv2.namedWindow("Camera Input", cv2.WINDOW_NORMAL)
@@ -127,18 +152,29 @@ def main():
         frame = cv2.flip(frame, 1)
         frame = cv2.resize(frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = face_mesh.process(rgb)
 
-        if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                expression = detect_expression(face_landmarks)
-                current_meme = memes[expression].copy()
-                cv2.putText(frame, f"Expression: {expression}", (10, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
-        else:
-            current_meme = memes["serious"].copy()
-            cv2.putText(frame, "No face detected", (10, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        # process ทั้งหน้าและมือ
+        face_results = face_mesh.process(rgb)
+        hand_results = hands.process(rgb)
+
+        face_landmarks = face_results.multi_face_landmarks[0] if face_results.multi_face_landmarks else None
+        hand_landmarks = hand_results.multi_hand_landmarks if hand_results.multi_hand_landmarks else None
+
+        expression = detect_expression(face_landmarks, hand_landmarks)
+        current_meme = memes[expression].copy()
+
+        # วาด landmarks เพื่อ debug
+        if hand_landmarks:
+            for hand in hand_landmarks:
+                mp_drawing.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
+
+        if face_landmarks:
+            mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
+                                        landmark_drawing_spec=None,
+                                        connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1))
+
+        cv2.putText(frame, f"Expression: {expression}", (10, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
         cv2.imshow("Camera Input", frame)
         cv2.imshow("Meme Output", current_meme)
@@ -149,6 +185,7 @@ def main():
     cap.release()
     cv2.destroyAllWindows()
     face_mesh.close()
+    hands.close()
     print("[OK] Application closed successfully.")
 
 if __name__ == "__main__":
