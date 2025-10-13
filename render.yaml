@@ -2,5 +2,6 @@ services:
   - type: web
     name: face-hand-expression
     env: python
-    buildCommand: pip install -r requirements.txt
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
