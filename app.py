@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 import cv2
 import mediapipe as mp
 import math
@@ -137,6 +137,11 @@ class MemeVideoTransformer(VideoTransformerBase):
         self.current_frame = img
         return img
 
+# ---------------- WebRTC Configuration ----------------
+RTC_CONFIGURATION = RTCConfiguration(
+    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+
 # ---------------- Layout ----------------
 col1, col2 = st.columns([2, 1])
 
@@ -146,6 +151,7 @@ with col1:
         video_processor_factory=lambda: MemeVideoTransformer(overlay=show_overlay),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
+        rtc_configuration=RTC_CONFIGURATION, 
     )
 
 with col2:
