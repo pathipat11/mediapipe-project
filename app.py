@@ -4,11 +4,10 @@ import cv2
 import mediapipe as mp
 import math
 import numpy as np
-import os
 import time
 
-st.set_page_config(page_title="🐵 Real-time Face + Hand Meme", layout="wide")
-st.title("🐵 Real-time Face + Hand Expression Meme Display")
+st.set_page_config(page_title="Real-time Face + Hand Meme", layout="wide")
+st.title("Real-time Face + Hand Expression Meme Display")
 
 # ---------------- Mediapipe Setup ----------------
 mp_face_mesh = mp.solutions.face_mesh
@@ -18,6 +17,10 @@ mp_drawing = mp.solutions.drawing_utils
 MOUTH_OPEN_THRESHOLD = 0.045
 HAND_FACE_DISTANCE_THRESHOLD = 0.08
 
+# ---------------- Streamlit Controls ----------------
+show_overlay = st.sidebar.checkbox("Show Overlay (lines & distances)", value=True)
+
+# ---------------- Helper Functions ----------------
 def euclidean(p1, p2):
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
 
@@ -26,7 +29,7 @@ def mouth_open_ratio(landmarks):
     bottom = landmarks.landmark[14]
     return abs(top.y - bottom.y)
 
-def detect_expression(face_landmarks, hand_landmarks):
+def detect_expression(face_landmarks, hand_landmarks, frame=None, overlay=True):
     if not face_landmarks:
         return "serious"
 
@@ -41,9 +44,32 @@ def detect_expression(face_landmarks, hand_landmarks):
             forehead = face_landmarks.landmark[10]
 
             dist_mouth = euclidean(index_tip, mouth_center)
+            dist_forehead = euclidean(index_tip, forehead)
+
+            if overlay and frame is not None:
+                h, w, _ = frame.shape
+                p_index = (int(index_tip.x * w), int(index_tip.y * h))
+                p_mouth = (int(mouth_center.x * w), int(mouth_center.y * h))
+                p_forehead = (int(forehead.x * w), int(forehead.y * h))
+
+                # Draw points
+                cv2.circle(frame, p_index, 8, (255, 0, 0), -1)
+                cv2.circle(frame, p_mouth, 6, (0, 255, 0), -1)
+                cv2.circle(frame, p_forehead, 6, (0, 255, 255), -1)
+
+                # Draw lines
+                cv2.line(frame, p_index, p_mouth, (0, 255, 0), 2)
+                cv2.line(frame, p_index, p_forehead, (0, 255, 255), 2)
+
+                # Show distances
+                cv2.putText(frame, f"mouth:{dist_mouth:.3f}", (p_index[0]+10, p_index[1]-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+                cv2.putText(frame, f"forehead:{dist_forehead:.3f}", (p_index[0]+10, p_index[1]+20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,255), 2)
+
+            # Expression detection
             if dist_mouth < HAND_FACE_DISTANCE_THRESHOLD:
                 return "shy"
-
             if index_tip.y < forehead.y:
                 return "thinking"
 
@@ -51,7 +77,8 @@ def detect_expression(face_landmarks, hand_landmarks):
 
 # ---------------- Video Transformer ----------------
 class MemeVideoTransformer(VideoTransformerBase):
-    def __init__(self):
+    def __init__(self, overlay=True):
+        self.overlay = overlay
         self.face_mesh = mp_face_mesh.FaceMesh(
             min_detection_confidence=0.6,
             min_tracking_confidence=0.6,
@@ -84,25 +111,25 @@ class MemeVideoTransformer(VideoTransformerBase):
         face_landmarks = face_results.multi_face_landmarks[0] if face_results.multi_face_landmarks else None
         hand_landmarks = hand_results.multi_hand_landmarks if hand_results.multi_hand_landmarks else None
 
-        expression = detect_expression(face_landmarks, hand_landmarks)
+        expression = detect_expression(face_landmarks, hand_landmarks, img, overlay=self.overlay)
 
-        # วาด face landmarks
-        if face_landmarks:
-            mp_drawing.draw_landmarks(
-                img, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
-                landmark_drawing_spec=None,
-                connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1)
-            )
-
-        # วาด hand landmarks
-        if hand_landmarks:
-            for hand in hand_landmarks:
+        # วาด face & hand landmarks
+        if self.overlay:
+            if face_landmarks:
                 mp_drawing.draw_landmarks(
-                    img, hand, mp_hands.HAND_CONNECTIONS,
-                    landmark_drawing_spec=mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=3)
+                    img, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=1)
                 )
 
-        # วาดชื่ออารมณ์
+            if hand_landmarks:
+                for hand in hand_landmarks:
+                    mp_drawing.draw_landmarks(
+                        img, hand, mp_hands.HAND_CONNECTIONS,
+                        landmark_drawing_spec=mp_drawing.DrawingSpec(color=(0,0,255), thickness=2, circle_radius=3)
+                    )
+
+        # แสดงชื่ออารมณ์
         cv2.putText(img, f"{expression.upper()}", (30, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3)
 
@@ -111,24 +138,26 @@ class MemeVideoTransformer(VideoTransformerBase):
         return img
 
 # ---------------- Layout ----------------
-col1, col2 = st.columns([2, 1])  # กล้องฝั่งซ้าย 2 ส่วน meme ฝั่งขวา 1 ส่วน
+col1, col2 = st.columns([2, 1])
 
 with col1:
     webrtc_ctx = webrtc_streamer(
         key="face-hand-meme",
-        video_processor_factory=MemeVideoTransformer,
+        video_processor_factory=lambda: MemeVideoTransformer(overlay=show_overlay),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
     )
 
 with col2:
-    st.subheader("🐵 Meme Output")
+    st.subheader("Meme Output")
     meme_placeholder = st.empty()
 
 # ---------------- Real-time Meme Update ----------------
 while True:
     time.sleep(0.1)
     if webrtc_ctx.video_processor:
+        # --- Update overlay real-time ---
+        webrtc_ctx.video_processor.overlay = show_overlay
         expression = getattr(webrtc_ctx.video_processor, "current_expression", None)
         frame = getattr(webrtc_ctx.video_processor, "current_frame", None)
         if expression and frame is not None:
