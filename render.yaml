@@ -1,8 +1,24 @@
+version: "1"
 services:
-  - type: web
-    name: face-hand-expression
-    env: python
-    plan: free
-    pythonVersion: "3.11"
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+- type: web
+  name: face-hand-expression
+  runtime: python
+  repo: https://github.com/pathipat11/mediapipe-project
+  plan: free
+  envVars:
+  - key: pythonVersion
+    sync: 3.11
+  - key: type
+    sync: web
+  - key: name
+    sync: face-hand-expression
+  - key: startCommand
+    sync: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+  - key: env
+    sync: python
+  - key: buildCommand
+    sync: pip install --upgrade pip && pip install -r requirements.txt
+  region: oregon
+  buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+  startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+  autoDeployTrigger: commit
