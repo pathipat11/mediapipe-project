@@ -139,7 +139,16 @@ class MemeVideoTransformer(VideoTransformerBase):
 
 # ---------------- WebRTC Configuration ----------------
 RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+    {"iceServers": [
+        # Google STUN (หลัก)
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        # Twilio STUN
+        {"urls": ["stun:global.stun.twilio.com:3478"]},
+        # Coturn (TURN Server สาธารณะ - มักใช้เมื่อ STUN ล้มเหลว)
+        # Note: TURN servers ที่เป็นสาธารณะฟรีอาจไม่เสถียร
+        # หากต้องการความเสถียร ต้องตั้งค่า TURN server เอง
+        # {"urls": ["turn:numb.viifire.com:3478"], "username": "...", "credential": "..."}
+    ]}
 )
 
 # ---------------- Layout ----------------
