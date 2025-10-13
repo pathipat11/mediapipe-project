@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 import cv2
 import mediapipe as mp
 import math
@@ -137,22 +137,6 @@ class MemeVideoTransformer(VideoTransformerBase):
         self.current_frame = img
         return img
 
-# ---------------- WebRTC Configuration ----------------
-RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [
-        # STUN Servers
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:global.stun.twilio.com:3478"]},
-        # TURN Server สาธารณะ (ตัวเลือกสำรองที่เพิ่มความหลากหลาย)
-        {"urls": "turn:openrelay.metered.ca:80", "username": "openrelayproject", "credential": "openrelayproject"},
-        {"urls": "turn:openrelay.metered.ca:443", "username": "openrelayproject", "credential": "openrelayproject"},
-    ],
-    # *** เพิ่มบรรทัดนี้เพื่อบังคับใช้ TCP ***
-    "iceTransportPolicy": "relay", # บังคับให้ใช้ TURN/Relay
-    # อีกตัวเลือกคือ "all" หรือ "public", แต่ "relay" เป็นการทดสอบ TURN/TCP ได้ดีที่สุด
-    } 
-)
-
 # ---------------- Layout ----------------
 col1, col2 = st.columns([2, 1])
 
@@ -162,7 +146,6 @@ with col1:
         video_processor_factory=lambda: MemeVideoTransformer(overlay=show_overlay),
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
-        rtc_configuration=RTC_CONFIGURATION, 
     )
 
 with col2:
