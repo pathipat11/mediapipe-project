@@ -140,15 +140,17 @@ class MemeVideoTransformer(VideoTransformerBase):
 # ---------------- WebRTC Configuration ----------------
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [
-        # Google STUN (หลัก)
+        # STUN Servers
         {"urls": ["stun:stun.l.google.com:19302"]},
-        # Twilio STUN
         {"urls": ["stun:global.stun.twilio.com:3478"]},
-        # Coturn (TURN Server สาธารณะ - มักใช้เมื่อ STUN ล้มเหลว)
-        # Note: TURN servers ที่เป็นสาธารณะฟรีอาจไม่เสถียร
-        # หากต้องการความเสถียร ต้องตั้งค่า TURN server เอง
-        # {"urls": ["turn:numb.viifire.com:3478"], "username": "...", "credential": "..."}
-    ]}
+        # TURN Server สาธารณะ (ตัวเลือกสำรองที่เพิ่มความหลากหลาย)
+        {"urls": "turn:openrelay.metered.ca:80", "username": "openrelayproject", "credential": "openrelayproject"},
+        {"urls": "turn:openrelay.metered.ca:443", "username": "openrelayproject", "credential": "openrelayproject"},
+    ],
+    # *** เพิ่มบรรทัดนี้เพื่อบังคับใช้ TCP ***
+    "iceTransportPolicy": "relay", # บังคับให้ใช้ TURN/Relay
+    # อีกตัวเลือกคือ "all" หรือ "public", แต่ "relay" เป็นการทดสอบ TURN/TCP ได้ดีที่สุด
+    } 
 )
 
 # ---------------- Layout ----------------
