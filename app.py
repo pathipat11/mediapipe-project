@@ -37,7 +37,7 @@ def euclidean(p1, p2):
     return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
 
 def mouth_open_ratio(landmarks):
-    """Calculate the distance between top and bottom lip."""
+    """Calculate mouth opening ratio."""
     top = landmarks.landmark[13]
     bottom = landmarks.landmark[14]
     return abs(top.y - bottom.y)
@@ -79,40 +79,40 @@ def detect_expression_from_image(image):
 # =====================================================================
 st.set_page_config(page_title="🐵 Face + Hand Expression Meme", layout="centered")
 st.title("🐵 Face + Hand Expression Meme Display")
+st.write("ใช้กล้องเพื่อจับใบหน้าและท่ามือ แล้วดู meme ที่ตรงกับอารมณ์ของคุณ!")
 
-st.write("Upload a photo and I’ll guess your **expression** — then show the matching meme!")
-
-uploaded = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
-
-# Load meme assets
+# โหลด meme
 meme_files = {
     "serious": "assets/the-monkey-serious-meme.png",
     "shy": "assets/the-monkey-shy-meme.png",
     "surprised": "assets/the-monkey-surprised-meme.png",
     "thinking": "assets/the-monkey-thinking-meme.png"
 }
-
 memes = {}
 for key, path in meme_files.items():
     if os.path.exists(path):
         memes[key] = cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
     else:
-        memes[key] = np.zeros((300, 300, 3), dtype=np.uint8)  # fallback black image
+        memes[key] = np.zeros((300, 300, 3), dtype=np.uint8)
 
-if uploaded:
-    # Convert uploaded file → OpenCV image
-    bytes_data = uploaded.read()
+# กล้องจาก browser
+camera_image = st.camera_input("📸 เปิดกล้องเพื่อจับภาพ")
+
+if camera_image is not None:
+    # แปลงภาพจาก streamlit → OpenCV
+    bytes_data = camera_image.read()
     image = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
 
-    # Detect expression
+    # ตรวจจับอารมณ์
     expression = detect_expression_from_image(image)
 
-    st.subheader(f"😄 Detected Expression: **{expression.upper()}**")
-    st.image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), caption="Uploaded Image", use_column_width=True)
+    # แสดงผล
+    st.subheader(f"😄 ตรวจจับได้: **{expression.upper()}**")
+    st.image(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), caption="ภาพจากกล้อง", use_column_width=True)
 
     if expression in memes:
-        st.image(memes[expression], caption=f"Meme for {expression}", use_column_width=True)
+        st.image(memes[expression], caption=f"Meme: {expression}", use_column_width=True)
     else:
-        st.warning("No meme image found for this expression.")
+        st.warning("ไม่พบ meme สำหรับอารมณ์นี้ 🐒")
 else:
-    st.info("👆 Upload an image above to start!")
+    st.info("👆 กดปุ่มเพื่อเปิดกล้อง แล้วถ่ายภาพเพื่อเริ่มตรวจจับ!")
