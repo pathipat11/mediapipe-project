@@ -5,6 +5,7 @@ services:
   runtime: python
   repo: https://github.com/pathipat11/mediapipe-project
   plan: free
+  pythonVersion: 3.11.4
   envVars:
       - key: PYTHON_VERSION
         value: "3.11"
