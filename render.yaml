@@ -3,6 +3,6 @@ services:
     name: face-hand-expression
     env: python
     plan: free
-    pythonVersion: "3.10"
+    pythonVersion: "3.11"
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
