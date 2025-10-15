@@ -1,6 +1,12 @@
 # 🐵 Face + Hand Expression Meme Display
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-0.10.7-green)
+![OpenCV](https://img.shields.io/badge/OpenCV-4.8-orange)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow)
+
 A fun and interactive Python project using **MediaPipe** and **OpenCV** that detects facial expressions and hand gestures to display different meme images in real time.
+
 
 **GitHub:** [https://github.com/pathipat11/mediapipe-project.git](https://github.com/pathipat11/mediapipe-project.git)
 
@@ -10,6 +16,11 @@ Perfect for learning:
 * MediaPipe Face Mesh & Hands tracking
 * Gesture-based interaction
 * Landmark distance analysis
+
+## 🎬 Demo Preview
+
+<!-- ![demo-gif](assets/demo-preview.gif) -->
+
 
 ## 🎭 Expressions Supported
 
@@ -152,8 +163,6 @@ mediapipe-project/
 ├── CONTRIBUTING.md      # Guide for contributors
 ├── LICENSE              # MIT License
 ├── .gitignore           # Git ignore file
-├── apple.png            # Meme image (normal state) - YOU NEED TO ADD THIS
-└── appletongue.png      # Meme image (tongue out) - YOU NEED TO ADD THIS
 ```
 
 ## 🧾 Dependencies
