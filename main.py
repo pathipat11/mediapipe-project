@@ -69,7 +69,7 @@ def mouth_open_ratio(landmarks):
 def get_landmark_point(landmarks, idx):
     return landmarks.landmark[idx]
 
-def detect_expression(face_landmarks, hand_landmarks, frame=None):
+def detect_expression(face_landmarks, hand_landmarks, frame=None, show_drawing=True):
     """
     Detect facial expression or hand gesture and return expression name.
     Optionally draw debug lines if frame is provided.
@@ -100,7 +100,7 @@ def detect_expression(face_landmarks, hand_landmarks, frame=None):
             dist_forehead = euclidean(index_tip, forehead)
 
             # --- Debug visualization ---
-            if frame is not None:
+            if show_drawing and frame is not None:
                 h, w, _ = frame.shape
                 p_index = (int(index_tip.x * w), int(index_tip.y * h))
                 p_mouth = (int(mouth_center.x * w), int(mouth_center.y * h))
@@ -187,6 +187,7 @@ def main():
     cv2.resizeWindow("Camera Input", WINDOW_WIDTH, WINDOW_HEIGHT)
     cv2.resizeWindow("Meme Output", WINDOW_WIDTH, WINDOW_HEIGHT)
 
+    draw_enabled = True
     current_meme = memes["serious"].copy()
 
     while True:
@@ -205,16 +206,16 @@ def main():
         face_landmarks = face_results.multi_face_landmarks[0] if face_results.multi_face_landmarks else None
         hand_landmarks = hand_results.multi_hand_landmarks if hand_results.multi_hand_landmarks else None
 
-        expression = detect_expression(face_landmarks, hand_landmarks, frame)
+        expression = detect_expression(face_landmarks, hand_landmarks, frame, show_drawing=draw_enabled)
         current_meme = memes[expression].copy()
 
         # Draw hand landmarks
-        if hand_landmarks:
+        if draw_enabled and hand_landmarks:
             for hand in hand_landmarks:
                 mp_drawing.draw_landmarks(frame, hand, mp_hands.HAND_CONNECTIONS)
 
         # Draw face landmarks
-        if face_landmarks:
+        if draw_enabled and face_landmarks:
             mp_drawing.draw_landmarks(frame, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
                                         landmark_drawing_spec=None,
                                         connection_drawing_spec=mp_drawing.DrawingSpec(color=(0, 255, 0),
@@ -222,15 +223,21 @@ def main():
                                                                                         circle_radius=1))
 
         # --- Draw overlay label ---
-        draw_expression_overlay(frame, expression)
+        if draw_enabled:
+            draw_expression_overlay(frame, expression)
 
         # Display both camera feed and meme output
         cv2.imshow("Camera Input", frame)
         cv2.imshow("Meme Output", current_meme)
 
         # Press 'q' to exit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('e'):
+            draw_enabled = not draw_enabled
+            print(f"[INFO] Drawing landmarks: {'ON' if draw_enabled else 'OFF'}")
+        elif key == ord('q'):
             break
+
 
     # Cleanup
     cap.release()
